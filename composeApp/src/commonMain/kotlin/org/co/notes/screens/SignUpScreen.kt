@@ -1,4 +1,4 @@
-package screens
+package org.co.notes.screens
 
 import androidx.compose.foundation.background
 

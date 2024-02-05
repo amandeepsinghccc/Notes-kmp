@@ -55,6 +55,7 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
+            implementation(libs.mvvm.core)
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
