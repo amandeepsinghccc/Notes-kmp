@@ -21,6 +21,7 @@ ktorClientContentNegotiation = "2.3.7"
 ktorClientCore = "2.3.7"
 material3 = "1.2.0-rc01"
 mvvmCore = "0.16.1"
+resourcesGenerator = "0.23.0"
 
 [libraries]
 androidx-material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
@@ -45,6 +46,8 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientCore" }
 androidx-ui-tooling-preview-android = { group = "androidx.compose.ui", name = "ui-tooling-preview-android", version = "1.6.0" }
 mvvm-core = { module = "dev.icerock.moko:mvvm-core", version.ref = "mvvmCore" }
+resources = { module = "dev.icerock.moko:resources", version.ref = "resourcesGenerator" }
+resources-generator = { module = "dev.icerock.moko:resources-generator", version.ref = "resourcesGenerator" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

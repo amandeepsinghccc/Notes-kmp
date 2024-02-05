@@ -23,3 +23,10 @@ val LightColorScheme = lightColorScheme(
     secondary = PurpleGrey40,
     tertiary = Pink40
 )
+
+val NoteColorPink = Color(0xFFFD99FF)
+val NoteColorSkin = Color(0xFFFF9E9E)
+val NoteColorGreen = Color(0xFF91F48F)
+val NoteColorYellow = Color(0xFFFFF599)
+val NoteColorCyan = Color(0xFF9EFFFF)
+val NoteColorPurple = Color(0xFFB69CFF)

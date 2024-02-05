@@ -6,3 +6,6 @@ data class NotesModel(
     val createdDate:String,
     val updatedDate:String
 )
+data class StateUi(
+    val notesList : List<NotesModel> = listOf()
+)

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.jetbrainsCompose)
+//    id("dev.icerock.mobile.multiplatform-resources")
     kotlin("plugin.serialization") version "1.9.21"
 }
 
@@ -27,6 +28,8 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+//            export("dev.icerock.moko:resources:0.23.0")
+//            export("dev.icerock.moko:graphics:0.9.0")
         }
     }
     
@@ -45,6 +48,7 @@ kotlin {
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
+//            implementation(libs.resources)
             implementation(libs.compose.ui.tooling.preview)
             implementation(compose.material3)
             implementation(compose.ui)
@@ -112,3 +116,7 @@ compose.desktop {
         }
     }
 }
+//multiplatformResources{
+//    multiplatformResourcesPackage = "org.co.notes"
+//    multiplatformResourcesClassName= "SharedRes"
+//}

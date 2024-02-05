@@ -10,15 +10,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -29,16 +35,23 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
+import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -48,8 +61,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.co.notes.MainViewModel
 import org.co.notes.font
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.painterResource
+import theme.NoteColorCyan
+import theme.NoteColorGreen
+import theme.NoteColorPink
+import theme.NoteColorPurple
+import theme.NoteColorSkin
+import theme.NoteColorYellow
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalResourceApi::class)
 @Composable
 fun MainScreen(mainViewModel: MainViewModel) {
     val nunito =
@@ -57,8 +78,23 @@ fun MainScreen(mainViewModel: MainViewModel) {
     var currentScreen by remember {
         mutableStateOf(CurrentScreen.MAIN_SCREEN)
     }
+    var colorList by remember {
+        mutableStateOf(
+            listOf<Color>(
+                NoteColorCyan, NoteColorGreen, NoteColorPink,
+                NoteColorYellow, NoteColorSkin, NoteColorPurple
+            )
+        )
+    }
+    var state = rememberTopAppBarState()
+    val noteList by mainViewModel.notesList.collectAsState()
+    LaunchedEffect(noteList) {
+        print("*******" + noteList)
+    }
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     if (currentScreen == CurrentScreen.MAIN_SCREEN) {
         Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             floatingActionButton = {
                 FloatingActionButton(
                     modifier = Modifier.padding(end = 5.dp, bottom = 5.dp).size(60.dp)
@@ -66,10 +102,10 @@ fun MainScreen(mainViewModel: MainViewModel) {
                     containerColor = Color(0xFFFDB600),
                     content = {
                         Icon(
-                            imageVector = Icons.Default.Add,
+                            painter = painterResource("add.xml"),
                             contentDescription = null,
                             tint = Color.Black,
-                            modifier = Modifier.size(40.dp)
+                            modifier = Modifier.size(30.dp)
                         )
                     },
                     shape = CircleShape,
@@ -79,6 +115,7 @@ fun MainScreen(mainViewModel: MainViewModel) {
             },
             topBar = {
                 TopAppBar(
+                    scrollBehavior = scrollBehavior,
                     modifier = Modifier.padding(top = 20.dp),
                     title = {
                         Text(
@@ -100,16 +137,21 @@ fun MainScreen(mainViewModel: MainViewModel) {
                             horizontalArrangement = Arrangement.spacedBy(20.dp)
                         ) {
                             WrappedIcon(Icons.Default.Search) {}
-                            WrappedIcon(Icons.Default.Info) {}
+                            WrappedIcon(Icons.Outlined.Info) {}
                         }
                     }
                 )
             },
             containerColor = Color(0xFF252525)
         ) {
+            LazyColumn(modifier=Modifier.padding(it)) {
+                items(noteList.notesList) {
+                    Note(it.title, nunito, colorList.random())
+                }
+            }
         }
     } else {
-        EditScreen() {
+        EditScreen(mainViewModel) {
             currentScreen = CurrentScreen.MAIN_SCREEN
         }
     }
@@ -117,7 +159,7 @@ fun MainScreen(mainViewModel: MainViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun EditScreen(onBackClick: () -> Unit) {
+fun EditScreen(viewModel: MainViewModel, onBackClick: () -> Unit) {
     val nunito =
         FontFamily(font("Nunito", "nunito_regular.ttf", FontWeight.Normal, FontStyle.Normal))
     var title by remember {
@@ -126,6 +168,7 @@ fun EditScreen(onBackClick: () -> Unit) {
     var body by remember {
         mutableStateOf("")
     }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -145,8 +188,11 @@ fun EditScreen(onBackClick: () -> Unit) {
                         modifier = Modifier.padding(end = 15.dp),
                         horizontalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
-                        WrappedIcon(Icons.Default.Search) {}
-                        WrappedIcon(Icons.Default.Info) {}
+                        WrappedIcon("visibility.xml") {}
+                        WrappedIcon(Icons.Default.Done) {
+                            viewModel.createNote(title, body)
+                            onBackClick()
+                        }
                     }
                 }
             )
@@ -167,7 +213,7 @@ fun EditScreen(onBackClick: () -> Unit) {
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = nunito,
                             fontSize = 30.sp,
-                            color = Color.LightGray,
+                            color = Color.LightGray.copy(.5f),
                             fontWeight = FontWeight(550)
                         )
                     )
@@ -198,7 +244,7 @@ fun EditScreen(onBackClick: () -> Unit) {
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontFamily = nunito,
                             fontSize = 20.sp,
-                            color = Color.LightGray,
+                            color = Color.LightGray.copy(alpha = .5f),
                             fontWeight = FontWeight(380)
                         )
                     )
@@ -275,6 +321,47 @@ fun WrappedIcon(icon: ImageVector, onClick: () -> Unit) {
                 .clickable(indication = null, interactionSource = MutableInteractionSource()) {
                     onClick()
                 }
+        )
+    }
+}
+
+@OptIn(ExperimentalResourceApi::class)
+@Composable
+fun WrappedIcon(resource: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.bounceClick().background(
+            color = Color.White.copy(alpha = .1f),
+            shape = AbsoluteRoundedCornerShape(10.dp)
+        )
+    ) {
+        Icon(
+            painter = painterResource(resource),
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.padding(10.dp).size(22.dp)
+                .clickable(indication = null, interactionSource = MutableInteractionSource()) {
+                    onClick()
+                }
+        )
+    }
+}
+
+@Composable
+fun Note(header: String, nunito: FontFamily, color: Color) {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 8.dp)
+            .background(color = color, shape = AbsoluteRoundedCornerShape(20f))
+    ) {
+        Text(
+            text = header,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 25.dp),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontFamily = nunito,
+                fontSize = 25.sp,
+                color = Color.Black,
+                fontWeight = FontWeight(550),
+                lineHeight = 28.sp
+            )
         )
     }
 }
