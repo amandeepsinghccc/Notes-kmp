@@ -30,6 +30,10 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -44,7 +48,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.rotate
@@ -53,12 +59,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import org.co.notes.MainViewModel
 import org.co.notes.font
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -144,7 +152,7 @@ fun MainScreen(mainViewModel: MainViewModel) {
             },
             containerColor = Color(0xFF252525)
         ) {
-            LazyColumn(modifier=Modifier.padding(it)) {
+            LazyColumn(modifier = Modifier.padding(it)) {
                 items(noteList.notesList) {
                     Note(it.title, nunito, colorList.random())
                 }
@@ -157,7 +165,7 @@ fun MainScreen(mainViewModel: MainViewModel) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 fun EditScreen(viewModel: MainViewModel, onBackClick: () -> Unit) {
     val nunito =
@@ -168,8 +176,14 @@ fun EditScreen(viewModel: MainViewModel, onBackClick: () -> Unit) {
     var body by remember {
         mutableStateOf("")
     }
+    val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val keyboard = LocalSoftwareKeyboardController.current
 
     Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState, snackbar = { Snackbar(snackbarData = it, containerColor = Color.White, contentColor = Color.Black) })
+        },
         topBar = {
             TopAppBar(
                 modifier = Modifier.padding(top = 20.dp),
@@ -190,8 +204,18 @@ fun EditScreen(viewModel: MainViewModel, onBackClick: () -> Unit) {
                     ) {
                         WrappedIcon("visibility.xml") {}
                         WrappedIcon(Icons.Default.Done) {
-                            viewModel.createNote(title, body)
-                            onBackClick()
+                            keyboard?.hide()
+                            if (title.isNotEmpty()) {
+                                viewModel.createNote(title, body)
+                                onBackClick()
+                            } else {
+                                scope.launch {
+                                    snackbarHostState.showSnackbar(
+                                        message = "Title cannot be empty",
+                                        duration = SnackbarDuration.Short
+                                    )
+                                }
+                            }
                         }
                     }
                 }
