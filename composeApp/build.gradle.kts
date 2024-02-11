@@ -7,13 +7,14 @@ plugins {
     alias(libs.plugins.jetbrainsCompose)
 //    id("dev.icerock.mobile.multiplatform-resources")
     kotlin("plugin.serialization") version "1.9.21"
+    id("com.squareup.sqldelight").version("1.5.5")
 }
 
 kotlin {
     androidTarget {
         compilations.all {
             kotlinOptions {
-                jvmTarget = "1.8"
+                jvmTarget = "17"
             }
         }
     }
@@ -40,16 +41,19 @@ kotlin {
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.ktor.client.android)
+            implementation("io.insert-koin:koin-android:3.2.0")
+            implementation("com.squareup.sqldelight:android-driver:1.5.5")
         }
 
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            implementation("com.squareup.sqldelight:native-driver:1.5.5")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
             implementation(compose.foundation)
 //            implementation(libs.resources)
-            implementation(libs.compose.ui.tooling.preview)
+//            implementation(libs.compose.ui.tooling.preview)
             implementation(compose.material3)
             implementation(compose.ui)
             implementation(libs.ktor.client.core)
@@ -60,6 +64,18 @@ kotlin {
             @OptIn(ExperimentalComposeLibrary::class)
             implementation(compose.components.resources)
             implementation(libs.mvvm.core)
+
+            implementation(libs.mvvm.compose)
+            implementation(libs.mvvm.flow)
+            implementation(libs.mvvm.flow.compose)
+
+            implementation (libs.decompose)
+            implementation("com.squareup.sqldelight:runtime:1.5.5")
+            implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+            implementation("io.insert-koin:koin-core:3.2.0")
+//            implementation("io.insert-koin:koin-compose:3.2.0")
+            implementation("com.squareup.sqldelight:coroutines-extensions:1.5.5")
+            implementation ("com.arkivanov.decompose:extensions-compose-jetbrains:2.1.4-compose-experimental")
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -94,8 +110,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     dependencies {
         debugImplementation(libs.compose.ui.tooling)
@@ -114,6 +130,11 @@ compose.desktop {
             packageName = "org.co.notes"
             packageVersion = "1.0.0"
         }
+    }
+}
+sqldelight {
+    database("NotesDatabase") {
+        packageName = "org.co.notes.database"
     }
 }
 //multiplatformResources{
