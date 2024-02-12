@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.co.notes.domain.DataSource
+import org.co.notes.domain.DateTimeUtil
 
 class MainViewModel(
     private val dataSource: DataSource
@@ -27,10 +28,14 @@ class MainViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), StateUi())
 
-    fun createNote(notesModel: NotesModel, onComplete: (id:Long) -> Unit) {
+    fun createNote(notesModel: NotesModel, onComplete: (id: Long) -> Unit) {
         viewModelScope.launch {
             val res = dataSource.addNote(
-                notesModel
+                if (notesModel.id != null) {
+                    notesModel.copy(updatedDate = DateTimeUtil.toEpochMillis(DateTimeUtil.now()))
+                }else{
+                    notesModel.copy(createdDate = DateTimeUtil.toEpochMillis(DateTimeUtil.now()), updatedDate = DateTimeUtil.toEpochMillis(DateTimeUtil.now()))
+                }
             )
             onComplete(res)
         }

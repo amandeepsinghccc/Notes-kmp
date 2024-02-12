@@ -3,6 +3,7 @@ package org.co.notes.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,7 +18,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Done
@@ -68,10 +71,14 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.PopupProperties
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import navigation.components.EditScreenComponent
 import org.co.notes.MainViewModel
 import org.co.notes.NotesModel
 import org.co.notes.StateUi
+import org.co.notes.domain.DateTimeUtil
 import org.co.notes.font
 import theme.BgColor
 
@@ -283,40 +290,62 @@ fun EditScreen(viewModel: MainViewModel, stateUi: StateUi, component: EditScreen
                         )
                     )
                 }
-
-                TextField(
-                    enabled = isInEditMode,
-                    value = body,
-                    onValueChange = { inputText ->
-                        body = inputText
-                    },
-                    placeholder = {
-                        Text(
-                            "Type something...",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontFamily = nunito,
-                                fontSize = 20.sp,
-                                color = Color.LightGray.copy(alpha = .5f),
-                                fontWeight = FontWeight(380)
+                Box(modifier=Modifier.weight(1f).verticalScroll(rememberScrollState())){
+                    TextField(
+                        modifier = Modifier,
+                        enabled = isInEditMode,
+                        value = body,
+                        onValueChange = { inputText ->
+                            body = inputText
+                        },
+                        placeholder = {
+                            Text(
+                                "Type something...",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontFamily = nunito,
+                                    fontSize = 20.sp,
+                                    color = Color.LightGray.copy(alpha = .5f),
+                                    fontWeight = FontWeight(380)
+                                )
                             )
+                        },
+                        colors = TextFieldDefaults.colors(
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent
+                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = nunito,
+                            fontSize = 20.sp,
+                            color = Color.White,
+                            lineHeight = 23.sp,
+                            fontWeight = FontWeight(380)
                         )
-                    },
-                    colors = TextFieldDefaults.colors(
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent
-                    ),
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                        fontFamily = nunito,
-                        fontSize = 20.sp,
-                        color = Color.White,
-                        lineHeight = 23.sp,
-                        fontWeight = FontWeight(380)
                     )
-                )
+                }
+                if (!isInEditMode) {
+                    Text(
+                        modifier = Modifier.fillMaxWidth().padding(end = 10.dp, bottom = 10.dp),
+                        text = "Last updated : ${
+                            DateTimeUtil.formatNoteDate(
+                                Instant.fromEpochMilliseconds(
+                                    notesModel.updatedDate
+                                ).toLocalDateTime(TimeZone.currentSystemDefault())
+                            )
+                        }",
+                        textAlign = TextAlign.End,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontFamily = nunito,
+                            fontSize = 12.sp,
+                            color = Color.LightGray.copy(alpha = .8f),
+                            fontWeight = FontWeight(500)
+                        )
+                    )
+                }
+
             }
         }
         if (showDeleteDialog) {

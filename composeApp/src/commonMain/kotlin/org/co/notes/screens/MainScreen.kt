@@ -41,6 +41,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
@@ -48,6 +49,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -63,7 +65,9 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import theme.BgColor
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalResourceApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalResourceApi::class,
+    ExperimentalComposeUiApi::class
+)
 @Composable
 fun MainScreen(mainViewModel: MainViewModel, stateUi: StateUi, component: MainScreenComponent) {
     LaunchedEffect(stateUi.notesList) {
@@ -72,7 +76,7 @@ fun MainScreen(mainViewModel: MainViewModel, stateUi: StateUi, component: MainSc
     val nunito =
         FontFamily(font("Nunito", "nunito_regular.ttf", FontWeight.Normal, FontStyle.Normal))
     LaunchedEffect(stateUi) {
-        print("*******" + stateUi)
+        print("******* $stateUi")
     }
     var isSearchBarOpened by remember {
         mutableStateOf(false)
@@ -80,6 +84,7 @@ fun MainScreen(mainViewModel: MainViewModel, stateUi: StateUi, component: MainSc
     var searchQuery by remember {
         mutableStateOf("")
     }
+    val keyboard = LocalSoftwareKeyboardController.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
@@ -125,8 +130,12 @@ fun MainScreen(mainViewModel: MainViewModel, stateUi: StateUi, component: MainSc
                                 indication = null,
                                 interactionSource = MutableInteractionSource()
                             ) {
-                                isSearchBarOpened = !isSearchBarOpened
-                                searchQuery = ""
+                                if (searchQuery.isNotEmpty()) {
+                                    searchQuery = ""
+                                    keyboard?.hide()
+                                } else {
+                                    isSearchBarOpened = !isSearchBarOpened
+                                }
                             }
                         )
                     },
@@ -155,7 +164,12 @@ fun MainScreen(mainViewModel: MainViewModel, stateUi: StateUi, component: MainSc
                     content = {
                         Spacer(modifier = Modifier.height(10.dp))
                         LazyColumn(modifier = Modifier.padding()) {
-                            items(stateUi.notesList) {
+                            items(stateUi.notesList.filter {
+                                it.title.contains(
+                                    searchQuery,
+                                    ignoreCase = true
+                                )
+                            }) {
                                 Note(it.title, nunito, Color(it.colorHex)) {
                                     mainViewModel.setSelectedNote(it)
                                     component.onEvent(MainScreenEvents.NoteDetails(it))
