@@ -10,7 +10,7 @@ class MainScreenComponent(
     componentContext: ComponentContext,
     private val navigateToScreen:(notesModel: NotesModel)->Unit
 ):ComponentContext by componentContext {
-    var notesModel:NotesModel =NotesModel(null,"","",1,1,1)
+    var notesModel:NotesModel =NotesModel(null,"","",1,1, colorHex = NotesModel.generateRandomColor())
     private var _notesState = MutableValue(listOf<NotesModel>())
     val noteList:Value<List<NotesModel>> get()  = _notesState
     fun onEvent(events: MainScreenEvents){

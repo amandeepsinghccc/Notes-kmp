@@ -1,6 +1,9 @@
 package org.co.notes.screens
 
+import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -8,6 +11,7 @@ import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,16 +21,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.AbsoluteRoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
@@ -37,6 +46,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -63,10 +73,12 @@ import org.co.notes.StateUi
 import org.co.notes.font
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
+import org.koin.core.logger.Logger
 import theme.BgColor
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalResourceApi::class,
-    ExperimentalComposeUiApi::class
+@OptIn(
+    ExperimentalMaterial3Api::class, ExperimentalResourceApi::class,
+    ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class
 )
 @Composable
 fun MainScreen(mainViewModel: MainViewModel, stateUi: StateUi, component: MainScreenComponent) {
@@ -84,145 +96,196 @@ fun MainScreen(mainViewModel: MainViewModel, stateUi: StateUi, component: MainSc
     var searchQuery by remember {
         mutableStateOf("")
     }
+    var showFilterDialog by remember {
+        mutableStateOf(false)
+    }
+    var selectedIndex by remember {
+        mutableIntStateOf(0)
+    }
+
+    var showMenuOptions by remember {
+        mutableStateOf(false)
+    }
     val keyboard = LocalSoftwareKeyboardController.current
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        floatingActionButton = {
-            FloatingActionButton(
-                modifier = Modifier.padding(end = 5.dp, bottom = 5.dp).size(60.dp)
-                    .bounceClick(),
-                containerColor = Color(0xFFFDB600),
-                content = {
-                    Icon(
-                        painter = painterResource("add.xml"),
-                        contentDescription = null,
-                        tint = Color.Black,
-                        modifier = Modifier.size(30.dp)
-                    )
-                },
-                shape = CircleShape,
-                onClick = {
-                    component.onEvent(
-                        MainScreenEvents.NoteDetails(
-                            notesModel = NotesModel(
-                                null,
-                                "",
-                                "",
-                                1,
-                                1,
-                                1
+    Box {
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            floatingActionButton = {
+                FloatingActionButton(
+                    modifier = Modifier.padding(end = 5.dp, bottom = 5.dp).size(60.dp)
+                        .bounceClick(),
+                    containerColor = Color(0xFFFDB600),
+                    content = {
+                        Icon(
+                            painter = painterResource("add.xml"),
+                            contentDescription = null,
+                            tint = Color.Black,
+                            modifier = Modifier.size(30.dp)
+                        )
+                    },
+                    shape = CircleShape,
+                    onClick = {
+                        component.onEvent(
+                            MainScreenEvents.NoteDetails(
+                                notesModel = NotesModel(
+                                    null,
+                                    "",
+                                    "",
+                                    1,
+                                    1,
+                                    1
+                                )
                             )
                         )
-                    )
-                })
-        },
-        topBar = {
-            if (isSearchBarOpened) {
-                SearchBar(
-                    query = searchQuery,
-                    trailingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.clickable(
-                                indication = null,
-                                interactionSource = MutableInteractionSource()
+                    })
+            },
+            topBar = {
+                if (isSearchBarOpened) {
+                    SearchBar(
+                        query = searchQuery,
+                        trailingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = MutableInteractionSource()
+                                ) {
+                                    if (searchQuery.isNotEmpty()) {
+                                        searchQuery = ""
+                                        keyboard?.hide()
+                                    } else {
+                                        isSearchBarOpened = !isSearchBarOpened
+                                    }
+                                }
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Search,
+                                contentDescription = null,
+                                tint = Color.White,
+                            )
+                        },
+                        placeholder = {
+                            Text("Search titles...")
+                        },
+                        onSearch = {},
+                        active = true,
+                        onActiveChange = {},
+                        colors = SearchBarDefaults.colors(
+                            containerColor = BgColor,
+                            inputFieldColors = TextFieldDefaults.colors(
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White,
+                                focusedPlaceholderColor = Color.LightGray.copy(alpha = .3f),
+                                unfocusedPlaceholderColor = Color.LightGray.copy(alpha = .3f)
+                            )
+                        ),
+                        content = {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            LazyColumn(modifier = Modifier.padding()) {
+                                items(stateUi.notesList.filter {
+                                    it.title.contains(
+                                        searchQuery,
+                                        ignoreCase = true
+                                    )
+                                }) {
+                                    Note(Modifier, it.title, nunito, Color(it.colorHex)) {
+                                        component.onEvent(MainScreenEvents.NoteDetails(it))
+                                    }
+                                }
+                            }
+                        },
+                        onQueryChange = { searchQuery = it })
+                } else {
+                    TopAppBar(
+                        scrollBehavior = scrollBehavior,
+                        modifier = Modifier.padding(top = 20.dp),
+                        title = {
+                            Text(
+                                "Notes",
+                                fontFamily = nunito,
+                                color = Color.White,
+                                fontSize = 35.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        },
+                        colors = TopAppBarDefaults.mediumTopAppBarColors(
+                            containerColor = Color(
+                                0xFF252525
+                            )
+                        ),
+                        actions = {
+                            Row(
+                                modifier = Modifier.padding(end = 15.dp),
+                                horizontalArrangement = Arrangement.spacedBy(20.dp)
                             ) {
-                                if (searchQuery.isNotEmpty()) {
-                                    searchQuery = ""
-                                    keyboard?.hide()
-                                } else {
+                                WrappedIcon(Icons.Default.Search) {
                                     isSearchBarOpened = !isSearchBarOpened
                                 }
-                            }
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = Color.White,
-                        )
-                    },
-                    placeholder = {
-                        Text("Search titles...")
-                    },
-                    onSearch = {},
-                    active = true,
-                    onActiveChange = {},
-                    colors = SearchBarDefaults.colors(
-                        containerColor = BgColor,
-                        inputFieldColors = TextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedPlaceholderColor = Color.LightGray.copy(alpha = .3f),
-                            unfocusedPlaceholderColor = Color.LightGray.copy(alpha = .3f)
-                        )
-                    ),
-                    content = {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        LazyColumn(modifier = Modifier.padding()) {
-                            items(stateUi.notesList.filter {
-                                it.title.contains(
-                                    searchQuery,
-                                    ignoreCase = true
-                                )
-                            }) {
-                                Note(it.title, nunito, Color(it.colorHex)) {
-                                    mainViewModel.setSelectedNote(it)
-                                    component.onEvent(MainScreenEvents.NoteDetails(it))
+                                WrappedIcon("filter.xml") {
+                                    showFilterDialog = !showFilterDialog
                                 }
                             }
                         }
-                    },
-                    onQueryChange = { searchQuery = it })
-            } else {
-                TopAppBar(
-                    scrollBehavior = scrollBehavior,
-                    modifier = Modifier.padding(top = 20.dp),
-                    title = {
-                        Text(
-                            "Notes",
-                            fontFamily = nunito,
-                            color = Color.White,
-                            fontSize = 35.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    },
-                    colors = TopAppBarDefaults.mediumTopAppBarColors(
-                        containerColor = Color(
-                            0xFF252525
-                        )
-                    ),
-                    actions = {
-                        Row(
-                            modifier = Modifier.padding(end = 15.dp),
-                            horizontalArrangement = Arrangement.spacedBy(20.dp)
-                        ) {
-                            WrappedIcon(Icons.Default.Search) {
-                                isSearchBarOpened = !isSearchBarOpened
-                            }
-                            WrappedIcon(Icons.Default.AccountCircle) {}
-                        }
-                    }
-                )
-            }
-        },
-        containerColor = Color(0xFF252525)
-    ) { paddingValues ->
-        LazyColumn(modifier = Modifier.padding(paddingValues)) {
-            items(stateUi.notesList) {
-                Note(it.title, nunito, Color(it.colorHex)) {
-                    mainViewModel.setSelectedNote(it)
-                    component.onEvent(MainScreenEvents.NoteDetails(it))
+                    )
                 }
+            },
+            containerColor = Color(0xFF252525)
+        ) { paddingValues ->
+            LazyColumn(modifier = Modifier.padding(paddingValues)) {
+                itemsIndexed(stateUi.notesList, key = { it, item -> item.id!! }) { index, it ->
+                    Note(
+                        Modifier.animateItemPlacement(),
+                        it.title,
+                        nunito,
+                        Color(it.colorHex)
+                    ) {
+                        component.onEvent(MainScreenEvents.NoteDetails(it))
+                    }
+                }
+            }
+        }
+        if (showFilterDialog) {
+            SortDialog(selectedIndex, onDone = {
+                showFilterDialog = !showFilterDialog
+                mainViewModel.sortList(selectedIndex)
+            }) {
+                selectedIndex = it
             }
         }
     }
 }
 
+@Composable
+fun SortDialog(selectedIndex: Int, onDone: () -> Unit, changeSelectedIndex: (Int) -> Unit) {
+    AlertDialog(
+        title = { Text("Sort By") },
+        onDismissRequest = { onDone() },
+        confirmButton = { Text("Apply", modifier = Modifier.clickable { onDone() }) },
+        text = {
+            Column {
+                repeat(filterList.size) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = selectedIndex == it,
+                            onClick = {
+                                changeSelectedIndex(it)
+                            }
+                        )
+                        Text(filterList[it])
+                    }
+                }
+            }
+        })
+}
+
+val filterList = listOf(
+    "Name", "Created", "Updated"
+)
 
 enum class ButtonState { Pressed, Idle }
 
@@ -298,7 +361,13 @@ fun WrappedIcon(resource: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun Note(header: String, nunito: FontFamily, color: Color, onClick: () -> Unit) {
+fun Note(
+    modifier: Modifier = Modifier,
+    header: String,
+    nunito: FontFamily,
+    color: Color,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier.fillMaxWidth().heightIn(100.dp)
             .padding(horizontal = 15.dp, vertical = 8.dp)
@@ -320,4 +389,9 @@ fun Note(header: String, nunito: FontFamily, color: Color, onClick: () -> Unit) 
             )
         )
     }
+}
+
+@Composable
+fun sortDialog() {
+
 }

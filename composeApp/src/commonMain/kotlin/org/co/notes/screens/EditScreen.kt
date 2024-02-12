@@ -36,6 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuItemColors
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDuration
@@ -108,6 +109,7 @@ fun EditScreen(viewModel: MainViewModel, stateUi: StateUi, component: EditScreen
     var selectedColorIndex by remember {
         mutableIntStateOf(-1)
     }
+
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val keyboard = LocalSoftwareKeyboardController.current
@@ -130,7 +132,6 @@ fun EditScreen(viewModel: MainViewModel, stateUi: StateUi, component: EditScreen
                     title = {
                         WrappedIcon(Icons.Default.ArrowBack) {
                             component.goBack()
-                            viewModel.setSelectedNote(null)
                         }
                     },
                     colors = TopAppBarDefaults.mediumTopAppBarColors(
@@ -201,7 +202,7 @@ fun EditScreen(viewModel: MainViewModel, stateUi: StateUi, component: EditScreen
                                                 title = title.trim(),
                                                 body = body.trim(),
                                                 updatedDate = 1,
-                                                colorHex = if (selectedColorIndex != -1) NotesModel.colors[selectedColorIndex] else NotesModel.generateRandomColor()
+                                                colorHex = if (notesModel.colorHex != 1.toLong()) notesModel.colorHex else if (selectedColorIndex != -1) NotesModel.colors[selectedColorIndex] else NotesModel.generateRandomColor()
                                             )
                                         ) {
                                             if (it != (-1).toLong()) {
@@ -213,7 +214,10 @@ fun EditScreen(viewModel: MainViewModel, stateUi: StateUi, component: EditScreen
                                                 }
                                                 isInEditMode = false
                                                 notesModel = notesModel.copy(
-                                                    id = it
+                                                    id = it,
+                                                    updatedDate = DateTimeUtil.toEpochMillis(
+                                                        DateTimeUtil.now()
+                                                    )
                                                 )
                                                 keyboard?.hide()
                                             } else {
@@ -290,7 +294,7 @@ fun EditScreen(viewModel: MainViewModel, stateUi: StateUi, component: EditScreen
                         )
                     )
                 }
-                Box(modifier=Modifier.weight(1f).verticalScroll(rememberScrollState())){
+                Box(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                     TextField(
                         modifier = Modifier,
                         enabled = isInEditMode,
